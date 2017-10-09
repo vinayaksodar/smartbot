@@ -7,12 +7,16 @@
     "botbuilder": "^3.11.0",
     "restify": "^6.0.1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vinayaksodar/smartbot"
+  },
   "devDependencies": {
     "@types/restify": "^5.0.5"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js"
   },
-  "author": "",
+  "author": "Vinayak & Ashwin",
   "license": "ISC"
 }

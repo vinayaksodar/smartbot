@@ -1,0 +1,8 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/CodeSamples/CreateChatBot-MathsPuzzle/bin
+/CodeSamples/CreateChatBot-MathsPuzzle/obj/Debug
+*.suo
+/CodeSamples/CreateChatBot-MathsPuzzle/packages

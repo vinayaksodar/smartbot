@@ -1,0 +1,1 @@
+THis is initial commit for IntelligentKiosk
