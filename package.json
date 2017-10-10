@@ -2,10 +2,12 @@
   "name": "smartbot",
   "version": "1.0.0",
   "description": "build a bot",
+  "application description": "build a smartbot",
   "main": "index.js",
   "dependencies": {
     "botbuilder": "^3.11.0",
-    "restify": "^6.0.1"
+    "restify": "^6.0.1",
+    "schema-inspector": "^1.6.8"
   },
   "repository": {
     "type": "git",
