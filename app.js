@@ -17,7 +17,7 @@ var connector = new builder.ChatConnector({
 // This default message handler is invoked if the user's utterance doesn't
 // match any intents handled by other dialogs.
 var bot = new builder.UniversalBot(connector, function (session, args) {
-    session.send("Hi... I'm the note bot sample. I can create new notes, read saved notes to you and delete notes.");
+    session.send("Hi... I'm smartbot. I can create new notes, read saved notes to you and delete notes.");
 
    // If the object for storing notes in session.userData doesn't exist yet, initialize it
    if (!session.userData.notes) {
@@ -30,109 +30,167 @@ var bot = new builder.UniversalBot(connector, function (session, args) {
 var luisAppUrl = process.env.LUIS_APP_URL || 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/6c9ee1ff-9254-4973-a0b1-880fe3ba209f?subscription-key=6f1e0acff86449f2af00ac9f0c8eb822&timezoneOffset=0&verbose=true&q=';
 bot.recognizer(new builder.LuisRecognizer(luisAppUrl));
 
-
-//Comuper vision linking
-bot.dialog('recognise image',[
-    function(session){
-        builder.Prompts.attachment(session,'Sure upload the image or give me a link');
-    },
+//greeting dialog
+bot.dialog('hello', [
     function (session, args, next) {
-       
-        if (hasImageAttachment(session)) {
-            var stream = getImageStreamFromMessage(session.message);
-            captionService
-                .getCaptionFromStream(stream)
-                .then(function (caption) { handleSuccessResponse(session, caption); })
-                .catch(function (error) { handleErrorResponse(session, error); });
-        } else {
-            var imageUrl = session.message.text || (validUrl.isUri(session.message.text) ? session.message.text : null);
-            if (imageUrl) {
-                captionService
-                    .getCaptionFromUrl(imageUrl)
-                    .then(function (caption) { handleSuccessResponse(session, caption); })
-                    .catch(function (error) { handleErrorResponse(session, error); });
-            } else {
-                session.send('Did you upload an image? I\'m more of a visual person. Try sending me an image or an image URL');
-            }
+        // Resolve and store any Note.Title entity passed from LUIS.
+        /*var intent = args.intent;
+        var title = builder.EntityRecognizer.findEntity(intent.entities, 'Note.Title');
+
+        var note = session.dialogData.note = {
+          title: title ? title.entity : null,
+        */
+        
+        // Prompt for title
+        session.send("Hi... ");
+        builder.Prompts.text(session, 'What is your name?');
+    
+        
+        
+    },
+    function (session, results, next) {
+        //var note = session.dialogData.note;
+        if (results.response) {
+            session.endDialog('Hello ' +results.response);
         }
-    },    
+        builder.Prompts.text(session,"How could i help you?");
+        
+    
+    }
 ]).triggerAction({ 
-    matches: 'cv',
-    confirmPrompt: "This will cancel recognition of the image you started. Are you sure?" 
-}).cancelAction('cancelCreateNote', "Note canceled.", {
-    matches: /^(cancel|nevermind)/i,
-    confirmPrompt: "Are you sure?"
+    matches: 'greeting',
 });
 
+//applinking
+bot.dialog('connect', [
+    function (session, args, next) {
+        // Resolve and store any Note.Title entity passed from LUIS.
+        /*var intent = args.intent;
+        var title = builder.EntityRecognizer.findEntity(intent.entities, 'Note.Title');
 
-// required functions for image recognition
-function hasImageAttachment(session) {
-    return session.message.attachments.length > 0 &&
-        session.message.attachments[0].contentType.indexOf('image') !== -1;
-}
+        var note = session.dialogData.note = {
+          title: title ? title.entity : null,
+        */
+        
+        // Prompt for title
+        
+        builder.Prompts.text(session, 'Oops! Could not connect');
+    
+        
+        
+    },
+    
+]).triggerAction({ 
+    matches: 'applinking',
+});
 
-function getImageStreamFromMessage(message) {
-    var headers = {};
-    var attachment = message.attachments[0];
-    if (checkRequiresToken(message)) {
-        // The Skype attachment URLs are secured by JwtToken,
-        // you should set the JwtToken of your bot as the authorization header for the GET request your bot initiates to fetch the image.
-        // https://github.com/Microsoft/BotBuilder/issues/662
-        connector.getAccessToken(function (error, token) {
-            var tok = token;
-            headers['Authorization'] = 'Bearer ' + token;
-            headers['Content-Type'] = 'application/octet-stream';
+//singing
+bot.dialog('sing', [
+    function (session, args, next) {
+        // Resolve and store any Note.Title entity passed from LUIS.
+        /*var intent = args.intent;
+        var title = builder.EntityRecognizer.findEntity(intent.entities, 'Note.Title');
 
-            return needle.get(attachment.contentUrl, { headers: headers });
-        });
+        var note = session.dialogData.note = {
+          title: title ? title.entity : null,
+        */
+        
+        // Prompt for title
+        
+        builder.Prompts.text(session, 'Haha you would not like it');
+    
+        
+        
+    },
+    
+]).triggerAction({ 
+    matches: 'sing',
+});
+
+//comparison dialog
+bot.dialog('better than', [
+    function (session, args, next) {
+        
+        var intent = args.intent;
+        var com = builder.EntityRecognizer.findEntity(intent.entities, 'comparison');
+        
+        
+        
+
+        var note = session.dialogData.note = {
+          com: com ? com.entity : null,
+        };
+        
+        // Prompt for title
+        if (!note.com) {
+            builder.Prompts.text(session, 'I am a bot in the initial stages! hence I cannot be compared to them');
+        } else {
+            next();
+        }
     }
+        
+]).triggerAction({ 
+    matches: 'personal',
 
-    headers['Content-Type'] = attachment.contentType;
-    return needle.get(attachment.contentUrl, { headers: headers });
-}
+});
 
-function checkRequiresToken(message) {
-    return message.source === 'skype' || message.source === 'msteams';
-}
+//knowledge dialog
+bot.dialog('know', [
+    function (session, args, next) {
+        // Resolve and store any Note.Title entity passed from LUIS.
+        /*var intent = args.intent;
+        var title = builder.EntityRecognizer.findEntity(intent.entities, 'Note.Title');
 
-/**
- * Gets the href value in an anchor element.
- * Skype transforms raw urls to html. Here we extract the href value from the url
- * @param {string} input Anchor Tag
- * @return {string} Url matched or null
- */
-function parseAnchorTag(input) {
-    var match = input.match('^<a href=\"([^\"]*)\">[^<]*</a>$');
-    if (match && match[1]) {
-        return match[1];
-    }
+        var note = session.dialogData.note = {
+          title: title ? title.entity : null,
+        */
+        
+        
+        builder.Prompts.text(session, 'Not yet! But i am learning...');
+    
+        
+        
+    },
+    
+]).triggerAction({ 
+    matches: 'knowledge',
+});
 
-    return null;
-}
+//identity dialog
+bot.dialog('made', [
+    function (session, args, next) {
+       
+        builder.Prompts.text(session, 'I am smartbot!!');
+    
+        
+        
+    },
+    
+]).triggerAction({ 
+    matches: 'identity',
+});
 
-//=========================================================
-// Response Handling
-//=========================================================
-function handleSuccessResponse(session, caption) {
-    if (caption) {
-        session.send('I think it\'s ' + caption);
-    }
-    else {
-        session.send('Couldn\'t find a caption for this one');
-    }
+//greeting dialog
+bot.dialog('created', [
+    function (session, args, next) {
+        // Resolve and store any Note.Title entity passed from LUIS.
+        /*var intent = args.intent;
+        var title = builder.EntityRecognizer.findEntity(intent.entities, 'Note.Title');
 
-}
-
-function handleErrorResponse(session, error) {
-    var clientErrorMessage = 'Oops! Something went wrong. Try again later.';
-    if (error.message && error.message.indexOf('Access denied') > -1) {
-        clientErrorMessage += "\n" + error.message;
-    }
-
-    console.error(error);
-    session.send(clientErrorMessage);
-}
-
+        var note = session.dialogData.note = {
+          title: title ? title.entity : null,
+        */
+        
+       
+        builder.Prompts.text(session, 'Well i dont really know them but am grateful that they made me');
+    
+        
+        
+    },
+    
+]).triggerAction({ 
+    matches: 'developer',
+});
 
 
 // CreateNote dialog
@@ -269,6 +327,109 @@ bot.dialog('ReadNote', [
 }).cancelAction('cancelReadNote', "Ok.", {
     matches: /^(cancel|nevermind)/i
 });
+
+//Comuper vision linking
+bot.dialog('recognise image',[
+    function(session){
+        builder.Prompts.attachment(session,'Sure upload the image or give me a link');
+    },
+    function (session, args, next) {
+       
+        if (hasImageAttachment(session)) {
+            var stream = getImageStreamFromMessage(session.message);
+            captionService
+                .getCaptionFromStream(stream)
+                .then(function (caption) { handleSuccessResponse(session, caption); })
+                .catch(function (error) { handleErrorResponse(session, error); });
+        } else {
+            var imageUrl = session.message.text || (validUrl.isUri(session.message.text) ? session.message.text : null);
+            if (imageUrl) {
+                captionService
+                    .getCaptionFromUrl(imageUrl)
+                    .then(function (caption) { handleSuccessResponse(session, caption); })
+                    .catch(function (error) { handleErrorResponse(session, error); });
+            } else {
+                session.send('Did you upload an image? I\'m more of a visual person. Try sending me an image or an image URL');
+            }
+        }
+    },    
+]).triggerAction({ 
+    matches: 'cv',
+    confirmPrompt: "This will cancel recognition of the image you started. Are you sure?" 
+}).cancelAction('cancelCreateNote', "Note canceled.", {
+    matches: /^(cancel|nevermind)/i,
+    confirmPrompt: "Are you sure?"
+});
+
+
+// required functions for image recognition
+function hasImageAttachment(session) {
+    return session.message.attachments.length > 0 &&
+        session.message.attachments[0].contentType.indexOf('image') !== -1;
+}
+
+function getImageStreamFromMessage(message) {
+    var headers = {};
+    var attachment = message.attachments[0];
+    if (checkRequiresToken(message)) {
+        // The Skype attachment URLs are secured by JwtToken,
+        // you should set the JwtToken of your bot as the authorization header for the GET request your bot initiates to fetch the image.
+        // https://github.com/Microsoft/BotBuilder/issues/662
+        connector.getAccessToken(function (error, token) {
+            var tok = token;
+            headers['Authorization'] = 'Bearer ' + token;
+            headers['Content-Type'] = 'application/octet-stream';
+
+            return needle.get(attachment.contentUrl, { headers: headers });
+        });
+    }
+
+    headers['Content-Type'] = attachment.contentType;
+    return needle.get(attachment.contentUrl, { headers: headers });
+}
+
+function checkRequiresToken(message) {
+    return message.source === 'skype' || message.source === 'msteams';
+}
+
+/**
+ * Gets the href value in an anchor element.
+ * Skype transforms raw urls to html. Here we extract the href value from the url
+ * @param {string} input Anchor Tag
+ * @return {string} Url matched or null
+ */
+function parseAnchorTag(input) {
+    var match = input.match('^<a href=\"([^\"]*)\">[^<]*</a>$');
+    if (match && match[1]) {
+        return match[1];
+    }
+
+    return null;
+}
+
+//=========================================================
+// Response Handling
+//=========================================================
+function handleSuccessResponse(session, caption) {
+    if (caption) {
+        session.send('I think it\'s ' + caption);
+    }
+    else {
+        session.send('Couldn\'t find a caption for this one');
+    }
+
+}
+
+function handleErrorResponse(session, error) {
+    var clientErrorMessage = 'Oops! Something went wrong. Try again later.';
+    if (error.message && error.message.indexOf('Access denied') > -1) {
+        clientErrorMessage += "\n" + error.message;
+    }
+
+    console.error(error);
+    session.send(clientErrorMessage);
+}
+
 
 
 
