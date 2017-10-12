@@ -78,18 +78,9 @@ bot.dialog('sing', [
 //comparison dialog
 bot.dialog('better than', [
     function (session, args, next) {
-        
-        var intent = args.intent;
-        var com = builder.EntityRecognizer.findEntity(intent.entities, 'comparison');
-        var note = session.dialogData.note = {
-          com: com ? com.entity : null,
-        };
-        
-        if (!note.com) {
+         {
             builder.Prompts.text(session, 'I am a bot in the initial stages! hence I cannot be compared to them');
-        } else {
-            next();
-        }
+        } 
     }
         
 ]).triggerAction({ 
@@ -294,9 +285,7 @@ bot.dialog('recognise image',[
 ]).triggerAction({ 
     matches: 'cv',
     confirmPrompt: "This will cancel recognition of the image you started. Are you sure?" 
-}).cancelAction('cancelCreateNote', "Note canceled.", {
-    matches: /^(cancel|nevermind)/i,
-    confirmPrompt: "Are you sure?"
+
 });
 
 
