@@ -17,7 +17,7 @@ var connector = new builder.ChatConnector({
 // This default message handler is invoked if the user's utterance doesn't
 // match any intents handled by other dialogs.
 var bot = new builder.UniversalBot(connector, function (session, args) {
-    session.send("Hi... I'm smartbot. I can create new notes, read saved notes to you and delete notes.");
+    session.send("Hi... I'm smartbot. I can create new notes, read saved notes to you and delete notes and give information about any image that u send to me.");
 
    // If the object for storing notes in session.userData doesn't exist yet, initialize it
    if (!session.userData.notes) {
@@ -33,15 +33,8 @@ bot.recognizer(new builder.LuisRecognizer(luisAppUrl));
 //greeting dialog
 bot.dialog('hello', [
     function (session, args, next) {
-        // Resolve and store any Note.Title entity passed from LUIS.
-        /*var intent = args.intent;
-        var title = builder.EntityRecognizer.findEntity(intent.entities, 'Note.Title');
-
-        var note = session.dialogData.note = {
-          title: title ? title.entity : null,
-        */
         
-        // Prompt for title
+        // Prompt for name
         session.send("Hi... ");
         builder.Prompts.text(session, 'What is your name?');
     
@@ -49,7 +42,7 @@ bot.dialog('hello', [
         
     },
     function (session, results, next) {
-        //var note = session.dialogData.note;
+        
         if (results.response) {
             session.endDialog('Hello ' +results.response);
         }
@@ -64,22 +57,9 @@ bot.dialog('hello', [
 //applinking
 bot.dialog('connect', [
     function (session, args, next) {
-        // Resolve and store any Note.Title entity passed from LUIS.
-        /*var intent = args.intent;
-        var title = builder.EntityRecognizer.findEntity(intent.entities, 'Note.Title');
-
-        var note = session.dialogData.note = {
-          title: title ? title.entity : null,
-        */
-        
-        // Prompt for title
-        
-        builder.Prompts.text(session, 'Oops! Could not connect');
-    
-        
-        
-    },
-    
+        //since we could not link to apps as we were running out of time
+        builder.Prompts.text(session, 'Oops! Could not connect'); 
+    }
 ]).triggerAction({ 
     matches: 'applinking',
 });
@@ -87,22 +67,10 @@ bot.dialog('connect', [
 //singing
 bot.dialog('sing', [
     function (session, args, next) {
-        // Resolve and store any Note.Title entity passed from LUIS.
-        /*var intent = args.intent;
-        var title = builder.EntityRecognizer.findEntity(intent.entities, 'Note.Title');
-
-        var note = session.dialogData.note = {
-          title: title ? title.entity : null,
-        */
-        
-        // Prompt for title
+        // this smartbot cannot sing and hence prompts further
         
         builder.Prompts.text(session, 'Haha you would not like it');
-    
-        
-        
-    },
-    
+    }
 ]).triggerAction({ 
     matches: 'sing',
 });
@@ -113,15 +81,10 @@ bot.dialog('better than', [
         
         var intent = args.intent;
         var com = builder.EntityRecognizer.findEntity(intent.entities, 'comparison');
-        
-        
-        
-
         var note = session.dialogData.note = {
           com: com ? com.entity : null,
         };
         
-        // Prompt for title
         if (!note.com) {
             builder.Prompts.text(session, 'I am a bot in the initial stages! hence I cannot be compared to them');
         } else {
@@ -137,19 +100,8 @@ bot.dialog('better than', [
 //knowledge dialog
 bot.dialog('know', [
     function (session, args, next) {
-        // Resolve and store any Note.Title entity passed from LUIS.
-        /*var intent = args.intent;
-        var title = builder.EntityRecognizer.findEntity(intent.entities, 'Note.Title');
-
-        var note = session.dialogData.note = {
-          title: title ? title.entity : null,
-        */
-        
-        
+        //bot is in the learning stages
         builder.Prompts.text(session, 'Not yet! But i am learning...');
-    
-        
-        
     },
     
 ]).triggerAction({ 
@@ -159,11 +111,8 @@ bot.dialog('know', [
 //identity dialog
 bot.dialog('made', [
     function (session, args, next) {
-       
+       //about its identity
         builder.Prompts.text(session, 'I am smartbot!!');
-    
-        
-        
     },
     
 ]).triggerAction({ 
@@ -173,20 +122,9 @@ bot.dialog('made', [
 //greeting dialog
 bot.dialog('created', [
     function (session, args, next) {
-        // Resolve and store any Note.Title entity passed from LUIS.
-        /*var intent = args.intent;
-        var title = builder.EntityRecognizer.findEntity(intent.entities, 'Note.Title');
-
-        var note = session.dialogData.note = {
-          title: title ? title.entity : null,
-        */
-        
-       
+       //when asked about its developer
         builder.Prompts.text(session, 'Well i dont really know them but am grateful that they made me');
-    
-        
-        
-    },
+    }
     
 ]).triggerAction({ 
     matches: 'developer',
@@ -429,14 +367,6 @@ function handleErrorResponse(session, error) {
     console.error(error);
     session.send(clientErrorMessage);
 }
-
-
-
-
-
-
-
-
 
 //create the host web server
 const server =restify.createServer();
