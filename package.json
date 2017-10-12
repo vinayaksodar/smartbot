@@ -6,8 +6,10 @@
   "main": "index.js",
   "dependencies": {
     "botbuilder": "^3.11.0",
+    "needle": "^2.0.1",
     "restify": "^6.0.1",
-    "schema-inspector": "^1.6.8"
+    "schema-inspector": "^1.6.8",
+    "valid-url": "^1.0.9"
   },
   "repository": {
     "type": "git",

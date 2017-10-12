@@ -1,5 +1,10 @@
+require('dotenv-extended').load();
 const builder = require('botbuilder');
 const restify = require('restify');
+var url = require('url');
+var validUrl = require('valid-url');
+var captionService = require('./caption-service');
+var needle=require('needle');
 
 //connector
 var connector = new builder.ChatConnector({
@@ -24,6 +29,111 @@ var bot = new builder.UniversalBot(connector, function (session, args) {
 // Add global LUIS recognizer to bot
 var luisAppUrl = process.env.LUIS_APP_URL || 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/6c9ee1ff-9254-4973-a0b1-880fe3ba209f?subscription-key=6f1e0acff86449f2af00ac9f0c8eb822&timezoneOffset=0&verbose=true&q=';
 bot.recognizer(new builder.LuisRecognizer(luisAppUrl));
+
+
+//Comuper vision linking
+bot.dialog('recognise image',[
+    function(session){
+        builder.Prompts.attachment(session,'Sure upload the image or give me a link');
+    },
+    function (session, args, next) {
+       
+        if (hasImageAttachment(session)) {
+            var stream = getImageStreamFromMessage(session.message);
+            captionService
+                .getCaptionFromStream(stream)
+                .then(function (caption) { handleSuccessResponse(session, caption); })
+                .catch(function (error) { handleErrorResponse(session, error); });
+        } else {
+            var imageUrl = session.message.text || (validUrl.isUri(session.message.text) ? session.message.text : null);
+            if (imageUrl) {
+                captionService
+                    .getCaptionFromUrl(imageUrl)
+                    .then(function (caption) { handleSuccessResponse(session, caption); })
+                    .catch(function (error) { handleErrorResponse(session, error); });
+            } else {
+                session.send('Did you upload an image? I\'m more of a visual person. Try sending me an image or an image URL');
+            }
+        }
+    },    
+]).triggerAction({ 
+    matches: 'cv',
+    confirmPrompt: "This will cancel recognition of the image you started. Are you sure?" 
+}).cancelAction('cancelCreateNote', "Note canceled.", {
+    matches: /^(cancel|nevermind)/i,
+    confirmPrompt: "Are you sure?"
+});
+
+
+// required functions for image recognition
+function hasImageAttachment(session) {
+    return session.message.attachments.length > 0 &&
+        session.message.attachments[0].contentType.indexOf('image') !== -1;
+}
+
+function getImageStreamFromMessage(message) {
+    var headers = {};
+    var attachment = message.attachments[0];
+    if (checkRequiresToken(message)) {
+        // The Skype attachment URLs are secured by JwtToken,
+        // you should set the JwtToken of your bot as the authorization header for the GET request your bot initiates to fetch the image.
+        // https://github.com/Microsoft/BotBuilder/issues/662
+        connector.getAccessToken(function (error, token) {
+            var tok = token;
+            headers['Authorization'] = 'Bearer ' + token;
+            headers['Content-Type'] = 'application/octet-stream';
+
+            return needle.get(attachment.contentUrl, { headers: headers });
+        });
+    }
+
+    headers['Content-Type'] = attachment.contentType;
+    return needle.get(attachment.contentUrl, { headers: headers });
+}
+
+function checkRequiresToken(message) {
+    return message.source === 'skype' || message.source === 'msteams';
+}
+
+/**
+ * Gets the href value in an anchor element.
+ * Skype transforms raw urls to html. Here we extract the href value from the url
+ * @param {string} input Anchor Tag
+ * @return {string} Url matched or null
+ */
+function parseAnchorTag(input) {
+    var match = input.match('^<a href=\"([^\"]*)\">[^<]*</a>$');
+    if (match && match[1]) {
+        return match[1];
+    }
+
+    return null;
+}
+
+//=========================================================
+// Response Handling
+//=========================================================
+function handleSuccessResponse(session, caption) {
+    if (caption) {
+        session.send('I think it\'s ' + caption);
+    }
+    else {
+        session.send('Couldn\'t find a caption for this one');
+    }
+
+}
+
+function handleErrorResponse(session, error) {
+    var clientErrorMessage = 'Oops! Something went wrong. Try again later.';
+    if (error.message && error.message.indexOf('Access denied') > -1) {
+        clientErrorMessage += "\n" + error.message;
+    }
+
+    console.error(error);
+    session.send(clientErrorMessage);
+}
+
+
 
 // CreateNote dialog
 bot.dialog('CreateNote', [
@@ -159,6 +269,11 @@ bot.dialog('ReadNote', [
 }).cancelAction('cancelReadNote', "Ok.", {
     matches: /^(cancel|nevermind)/i
 });
+
+
+
+
+
 
 
 
