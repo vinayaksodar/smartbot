@@ -13,6 +13,9 @@ var connector = new builder.ChatConnector({
 });
 
 
+
+
+
 // Create your bot with a function to receive messages from the user.
 // This default message handler is invoked if the user's utterance doesn't
 // match any intents handled by other dialogs.
@@ -29,6 +32,7 @@ var bot = new builder.UniversalBot(connector, function (session, args) {
 // Add global LUIS recognizer to bot
 var luisAppUrl = process.env.LUIS_APP_URL || 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/6c9ee1ff-9254-4973-a0b1-880fe3ba209f?subscription-key=6f1e0acff86449f2af00ac9f0c8eb822&timezoneOffset=0&verbose=true&q=';
 bot.recognizer(new builder.LuisRecognizer(luisAppUrl));
+
 
 //greeting dialog
 bot.dialog('hello', [
@@ -268,11 +272,10 @@ bot.dialog('ReadNote', [
 
 //Comuper vision linking
 bot.dialog('recognise image',[
-    function(session){
-        builder.Prompts.attachment(session,'Sure upload the image or give me a link');
+    function(session,next){
+        builder.Prompts.attachment(session,'Sure upload the image');
     },
     function (session, args, next) {
-       
         if (hasImageAttachment(session)) {
             var stream = getImageStreamFromMessage(session.message);
             captionService
@@ -280,7 +283,7 @@ bot.dialog('recognise image',[
                 .then(function (caption) { handleSuccessResponse(session, caption); })
                 .catch(function (error) { handleErrorResponse(session, error); });
         } else {
-            var imageUrl = session.message.text || (validUrl.isUri(session.message.text) ? session.message.text : null);
+            var imageUrl =  parseAnchorTag(session.message.text) || (validUrl.isUri(session.message.text) ? session.message.text : null);
             if (imageUrl) {
                 captionService
                     .getCaptionFromUrl(imageUrl)
@@ -290,14 +293,19 @@ bot.dialog('recognise image',[
                 session.send('Did you upload an image? I\'m more of a visual person. Try sending me an image or an image URL');
             }
         }
-    },    
+    },
+    function(session){
+        session.endDialog('')
+    }    
 ]).triggerAction({ 
     matches: 'cv',
-    confirmPrompt: "This will cancel recognition of the image you started. Are you sure?" 
-}).cancelAction('cancelCreateNote', "Note canceled.", {
+    confirmPrompt: "This will restart recognition of an image. Are you sure?" 
+}).cancelAction('cancelImageRecognition', "Image recognition canceled.", {
     matches: /^(cancel|nevermind)/i,
     confirmPrompt: "Are you sure?"
 });
+
+
 
 
 // required functions for image recognition
